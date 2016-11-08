@@ -1,8 +1,11 @@
 #include <stdio.h>
 #include <Windows.h>
+#include <conio.h>
+#include<stdlib.h>
+#include<time.h>
 #define MAX_X 15
 #define MAX_Y 15
-#define Slowness 700
+#define Slowness 200
 #pragma region Defining Types
 typedef int bool;
 enum boolEnum { false, true };
@@ -32,6 +35,7 @@ typedef struct Snake_s Snake;
 bool isDead;
 Snake MainSnake;
 Location t;
+Location ActiveFood;
 #pragma endregion
 #pragma region User Interface
 void VerticalWall() {
@@ -48,6 +52,9 @@ void ShowUI_Row(int y) {
 			printf("@"); continue;
 		}
 		bool isEmpty = true;
+		if (ActiveFood.x == x && ActiveFood.y == y) {
+			printf("x"); isEmpty = false;
+		}
 		for (int i = 0; i < MainSnake.Length - 1; i++) {
 			if (MainSnake.Tail[i].x == x && MainSnake.Tail[i].y == y) {
 				printf("o"); isEmpty = false; break;
@@ -82,7 +89,7 @@ void GameOver() {
 	printf("\n=============================\n");
 	printf("=         Game Over !       =\n");
 	printf("=============================\n");
-	printf("=     Final Length : %d     =\n", MainSnake.Length);
+	printf("       Final Length : %d     \n", MainSnake.Length);
 }
 void CheckIfCrashedByWall() {
 	if (isDead == true) return;
@@ -106,6 +113,88 @@ void SetTail(Location zeroTailBackup) {
 	MainSnake.Tail[1].x = zeroTailBackup.x;
 	MainSnake.Tail[1].y = zeroTailBackup.y;
 }
+bool CheckLocationIfEmpty(Location loc) {
+	if (MainSnake.Head.x == loc.x && MainSnake.Head.y == loc.y) return true;
+	for (int i = 0; i < MainSnake.Length - 1; i++) {
+		if (MainSnake.Tail[i].x == loc.x && MainSnake.Tail[i].y == loc.y) return true;
+	}
+	return true;
+}
+Location FindNearestEmptyLocation(Location loc) {
+	Location emptyLoc;
+	int ScanX_Start = loc.x;
+	int ScanX_End = loc.x;
+	int ScanY_Start = loc.y;
+	int ScanY_End = loc.y;
+	if (MainSnake.Length == MAX_X * MAX_Y) isDead = true;
+	while (1) {
+		ScanX_Start--;
+		ScanX_End++;
+		ScanY_Start--;
+		ScanY_End++;
+		if (ScanX_Start < 0) ScanX_Start = 0;
+		if (ScanY_Start < 0) ScanY_Start = 0;
+		if (ScanX_End > MAX_X) ScanX_End = MAX_X;
+		if (ScanY_End > MAX_Y) ScanY_End = MAX_Y;
+		for (int x = ScanX_Start; x <= ScanX_End; x++) {
+			for (int y = ScanY_Start; y <= ScanY_End; y++) {
+				emptyLoc.x = x; emptyLoc.y = y;
+				if (CheckLocationIfEmpty(emptyLoc) == true) {
+					return emptyLoc;
+				}
+			}
+		}
+	}
+}
+
+void CreateRandomFood() {
+	ActiveFood.x = rand() % MAX_X;
+	ActiveFood.y = rand() % MAX_Y;
+	bool isEmpty = false;
+	if (CheckLocationIfEmpty(ActiveFood) == false) {
+		ActiveFood = FindNearestEmptyLocation(ActiveFood);
+	}
+}
+void AddNewLengthToSnake() {
+	if (MainSnake.Length + 1 == MAX_X * MAX_Y) { isDead = true; MainSnake.Length++; return; }
+	Location a = MainSnake.Tail[MainSnake.Length - 2];
+	Location b = MainSnake.Tail[MainSnake.Length - 3];
+	int DirX = b.x - a.x;
+	int DirY = b.y - a.y;
+	switch (DirX) {
+	case 0:
+		MainSnake.Tail[MainSnake.Length].x = a.x;
+		break;
+	case 1:
+		MainSnake.Tail[MainSnake.Length].x = a.x - 1;
+		break;
+	case -1:
+		MainSnake.Tail[MainSnake.Length-1].x = a.x + 1;
+		break;
+	default:
+		isDead = true;
+		printf("OMG you found a bug. How it's posibble\n");
+	}
+	switch (DirY) {
+	case 0:
+		MainSnake.Tail[MainSnake.Length-1].y = a.y;
+		break;
+	case 1:
+		MainSnake.Tail[MainSnake.Length-1].y = a.y - 1;
+		break;
+	case -1:
+		MainSnake.Tail[MainSnake.Length-1].y = a.y + 1;
+		break;
+	default:
+		isDead = true;
+		printf("OMG you found a bug. How it's posibble\n");
+	}
+	MainSnake.Length++;
+}
+void FoodHasBeenEaten() {
+	AddNewLengthToSnake();
+	CreateRandomFood();
+}
 void Move() {
 	Location zero;
 	zero.x = MainSnake.Tail[0].x;
@@ -126,17 +215,43 @@ void Move() {
 		MainSnake.Head.x += 1;
 		break;
 	}
+	SetTail(zero);
 	CheckIfCrashedByWall();
 	CheckIfCrashedByTail();
-	SetTail(zero);
+	if (MainSnake.Head.x == ActiveFood.x && MainSnake.Head.y == ActiveFood.y) FoodHasBeenEaten();
+}
+
+void KeyPressHandler() {
+	if (_kbhit()) {
+		_getch();
+		char key = _getch();
+		switch (key)
+		{
+		case 77: //right
+			if (MainSnake.SnakeDirection != Left) MainSnake.SnakeDirection = Right;
+			break;
+		case 75: //left
+			if(MainSnake.SnakeDirection != Right) MainSnake.SnakeDirection = Left;
+			break;
+		case 72: //up
+			if (MainSnake.SnakeDirection != Down) MainSnake.SnakeDirection = Up;
+			break;
+		case 80: //down
+			if (MainSnake.SnakeDirection != Up) MainSnake.SnakeDirection = Down;
+			break;
+		default:
+			break;
+		}
+	}
 }
 #pragma endregion
-
 void main() {
 	NewGame();
 	ShowUI();
+	CreateRandomFood();
 	while (isDead == false) {
 		Sleep(Slowness);
+		KeyPressHandler();
 		Move();
 		ShowUI();
 	}
