@@ -1,11 +1,10 @@
 #include <stdio.h>
 #include <Windows.h>
 #include <conio.h>
-#include<stdlib.h>
-#include<time.h>
+#include <stdlib.h>
+#include <time.h>
 #define MAX_X 15
 #define MAX_Y 15
-#define Slowness 200
 #pragma region Defining Types
 typedef int bool;
 enum boolEnum { false, true };
@@ -36,6 +35,7 @@ bool isDead;
 Snake MainSnake;
 Location t;
 Location ActiveFood;
+int Speed;
 #pragma endregion
 #pragma region User Interface
 void VerticalWall() {
@@ -74,45 +74,6 @@ void ShowUI() {
 }
 #pragma endregion
 #pragma region Game Functions
-void NewGame() {
-	MainSnake.SnakeDirection = Up;
-	isDead = false;
-	MainSnake.Head.x = 5;
-	MainSnake.Head.y = 5;
-	MainSnake.Length = 4;
-	MainSnake.Tail[0].x = 5; MainSnake.Tail[0].y = 6;
-	MainSnake.Tail[1].x = 5; MainSnake.Tail[1].y = 7;
-	MainSnake.Tail[2].x = 5; MainSnake.Tail[2].y = 8;
-}
-
-void GameOver() {
-	printf("\n=============================\n");
-	printf("=         Game Over !       =\n");
-	printf("=============================\n");
-	printf("       Final Length : %d     \n", MainSnake.Length);
-}
-void CheckIfCrashedByWall() {
-	if (isDead == true) return;
-	if (MainSnake.Head.x > MAX_X || MainSnake.Head.x < 0 || MainSnake.Head.y > MAX_Y || MainSnake.Head.y < 0) {
-		isDead = true;
-	}
-}
-void CheckIfCrashedByTail() {
-	if (isDead == true) return;
-	for (int i = 0; i < MainSnake.Length; i++) {
-		if (MainSnake.Head.x == MainSnake.Tail[i].x && MainSnake.Head.y == MainSnake.Tail[i].y) {
-			isDead = true; break;
-		}
-	}
-}
-void SetTail(Location zeroTailBackup) {
-	for (int i = MainSnake.Length-2; i > 1; i--) {
-		MainSnake.Tail[i].x = MainSnake.Tail[i-1].x;
-		MainSnake.Tail[i].y = MainSnake.Tail[i-1].y;
-	}
-	MainSnake.Tail[1].x = zeroTailBackup.x;
-	MainSnake.Tail[1].y = zeroTailBackup.y;
-}
 bool CheckLocationIfEmpty(Location loc) {
 	if (MainSnake.Head.x == loc.x && MainSnake.Head.y == loc.y) return false;
 	for (int i = 0; i < MainSnake.Length - 1; i++) {
@@ -146,15 +107,57 @@ Location FindNearestEmptyLocation(Location loc) {
 		}
 	}
 }
-
 void CreateRandomFood() {
 	ActiveFood.x = rand() % MAX_X;
 	ActiveFood.y = rand() % MAX_Y;
 	bool isEmpty = false;
-	if (CheckLocationIfEmpty(ActiveFood) == false) {//buralar da bug var
+	if (CheckLocationIfEmpty(ActiveFood) == false) {
 		ActiveFood = FindNearestEmptyLocation(ActiveFood);
 	}
 }
+void NewGame() {
+	MainSnake.SnakeDirection = Up;
+	isDead = false;
+	MainSnake.Head.x = 5;
+	MainSnake.Head.y = 5;
+	MainSnake.Length = 4;
+	MainSnake.Tail[0].x = 5; MainSnake.Tail[0].y = 6;
+	MainSnake.Tail[1].x = 5; MainSnake.Tail[1].y = 7;
+	MainSnake.Tail[2].x = 5; MainSnake.Tail[2].y = 8;
+	CreateRandomFood();
+}
+
+void GameOver() {
+	printf("\n=============================\n");
+	printf("=         Game Over !       =\n");
+	printf("=============================\n");
+	printf("       Final Length : %d     \n", MainSnake.Length);
+}
+void CheckIfCrashedByWall() {
+	if (isDead == true) 
+		return;
+	if (MainSnake.Head.x >= MAX_X || MainSnake.Head.x < 0 || MainSnake.Head.y >= MAX_Y || MainSnake.Head.y < 0) {
+		isDead = true;
+	}
+}
+void CheckIfCrashedByTail() {
+	if (isDead == true) 
+		return;
+	for (int i = 0; i < MainSnake.Length-1; i++) {
+		if (MainSnake.Head.x == MainSnake.Tail[i].x && MainSnake.Head.y == MainSnake.Tail[i].y) {
+			isDead = true; break;
+		}
+	}
+}
+void SetTail(Location zeroTailBackup) {
+	for (int i = MainSnake.Length-2; i > 1; i--) {
+		MainSnake.Tail[i].x = MainSnake.Tail[i-1].x;
+		MainSnake.Tail[i].y = MainSnake.Tail[i-1].y;
+	}
+	MainSnake.Tail[1].x = zeroTailBackup.x;
+	MainSnake.Tail[1].y = zeroTailBackup.y;
+}
+
 void AddNewLengthToSnake() {
 	if (MainSnake.Length + 1 == MAX_X * MAX_Y) { isDead = true; MainSnake.Length++; return; }
 	Location a = MainSnake.Tail[MainSnake.Length - 2];
@@ -245,16 +248,27 @@ void KeyPressHandler() {
 	}
 }
 #pragma endregion
-void main() {
+void GameHandler() {
 	NewGame();
 	ShowUI();
-	CreateRandomFood();
 	while (isDead == false) {
-		Sleep(Slowness);
+		Sleep(Speed);
 		KeyPressHandler();
 		Move();
 		ShowUI();
 	}
 	GameOver();
 	getchar();
+}
+void main() {
+	while (true) {
+		printf("Set speed value for new game (1 - 100)\nSpeed : \n");
+		int a;
+		scanf_s("%d", &a);
+		if (a > 100) a = 100;
+		if (a < 1) a = 1;
+		Speed = (int) 1100 - a * 10;
+		GameHandler();
+	}
+	
 }
