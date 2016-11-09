@@ -53,7 +53,7 @@ void ShowUI_Row(int y) {
 		}
 		bool isEmpty = true;
 		if (ActiveFood.x == x && ActiveFood.y == y) {
-			printf("x"); isEmpty = false;
+			printf("x"); isEmpty = false; continue;
 		}
 		for (int i = 0; i < MainSnake.Length - 1; i++) {
 			if (MainSnake.Tail[i].x == x && MainSnake.Tail[i].y == y) {
@@ -114,9 +114,9 @@ void SetTail(Location zeroTailBackup) {
 	MainSnake.Tail[1].y = zeroTailBackup.y;
 }
 bool CheckLocationIfEmpty(Location loc) {
-	if (MainSnake.Head.x == loc.x && MainSnake.Head.y == loc.y) return true;
+	if (MainSnake.Head.x == loc.x && MainSnake.Head.y == loc.y) return false;
 	for (int i = 0; i < MainSnake.Length - 1; i++) {
-		if (MainSnake.Tail[i].x == loc.x && MainSnake.Tail[i].y == loc.y) return true;
+		if (MainSnake.Tail[i].x == loc.x && MainSnake.Tail[i].y == loc.y) return false;
 	}
 	return true;
 }
@@ -151,7 +151,7 @@ void CreateRandomFood() {
 	ActiveFood.x = rand() % MAX_X;
 	ActiveFood.y = rand() % MAX_Y;
 	bool isEmpty = false;
-	if (CheckLocationIfEmpty(ActiveFood) == false) {
+	if (CheckLocationIfEmpty(ActiveFood) == false) {//buralar da bug var
 		ActiveFood = FindNearestEmptyLocation(ActiveFood);
 	}
 }
@@ -163,10 +163,10 @@ void AddNewLengthToSnake() {
 	int DirY = b.y - a.y;
 	switch (DirX) {
 	case 0:
-		MainSnake.Tail[MainSnake.Length].x = a.x;
+		MainSnake.Tail[MainSnake.Length-1].x = a.x;
 		break;
 	case 1:
-		MainSnake.Tail[MainSnake.Length].x = a.x - 1;
+		MainSnake.Tail[MainSnake.Length-1].x = a.x - 1;
 		break;
 	case -1:
 		MainSnake.Tail[MainSnake.Length-1].x = a.x + 1;
